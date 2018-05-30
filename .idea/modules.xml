@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/coverflow/coverflow.iml" filepath="$PROJECT_DIR$/coverflow/coverflow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/music-player-3aea65957fe3d85676e17d661a6dd2ac10ed8a50.iml" filepath="$PROJECT_DIR$/music-player-3aea65957fe3d85676e17d661a6dd2ac10ed8a50.iml" />
+    </modules>
+  </component>
+</project>
