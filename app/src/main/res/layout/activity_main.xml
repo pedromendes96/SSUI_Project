@@ -26,13 +26,19 @@
         android:layout_alignParentBottom="true"
         android:padding="@dimen/space16"
         android:weightSum="5">
-        <ImageButton
-            android:layout_weight="1"
+
+        <ToggleButton
+            android:id="@+id/continous_play"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:src="@drawable/ic_repeat"
-            android:background="@null"/>
+            android:layout_weight="1"
+            android:button="@drawable/toggle_continuos_play"
+            android:checked="false"
+            android:textOff=""
+            android:textOn=""
+            android:background="@null"
+            android:src="@drawable/off_continuos_play" />
 
         <ImageButton
             android:id="@+id/previous"
@@ -64,12 +70,14 @@
             android:src="@drawable/ic_forward" />
 
         <ImageButton
+            android:id="@+id/shuffle"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:layout_weight="1"
+            android:button="@drawable/shuffle_button"
             android:background="@null"
-            android:src="@drawable/ic_shuffle" />
+            android:src="@drawable/shuffle_button" />
     </LinearLayout>
     <RelativeLayout
         android:id="@+id/rl_progress"
@@ -104,25 +112,25 @@
             android:textColor="@color/colorWhite"
             android:textSize="14sp" />
     </RelativeLayout>
+
     <TextView
         android:id="@+id/tv_artist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@id/rl_progress"
         android:layout_centerHorizontal="true"
-        android:text="by From First to Last "
-        android:textSize="14sp"
-        android:textColor="@color/colorWhite" />
+        android:textColor="@color/colorWhite"
+        android:textSize="14sp" />
+
     <TextView
         android:id="@+id/tv_song"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@id/tv_artist"
-        android:layout_marginBottom="@dimen/space8"
         android:layout_centerHorizontal="true"
-        android:text="Make War"
-        android:textSize="18sp"
-        android:textColor="@color/colorWhite" />
+        android:layout_marginBottom="@dimen/space8"
+        android:textColor="@color/colorWhite"
+        android:textSize="18sp" />
     <me.crosswall.lib.coverflow.core.PagerContainer
         android:id="@+id/pager_container"
         android:layout_width="match_parent"

@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.Image;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.view.PagerAdapter;
@@ -13,11 +14,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -52,8 +55,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
 
     public static final int[] MEDIAS_RES_ID =  {R.raw.the_time,R.raw.you_are_the_reason,R.raw.done_for_me,R.raw.perfect,R.raw.wild_thoughts,R.raw.in_my_blood};
-    // rever que isto nao faz muito sentido
-    public static boolean STARTED = false;
+    public static boolean CONTINOUS_PLAY = false;
 
     public int index;
     private SeekBar mSeekbarAudio;
@@ -63,8 +65,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv_full_time;
     private TextView tv_artist;
     private TextView tv_song;
-    private ToggleButton button;
+    private ToggleButton starButton;
+    private ToggleButton continousPlayButton;
     private ImageView mPlayButton;
+    private ImageView mShuffleButton;
     private UpdateTimer updateTimer;
     private ViewPager pager;
 
@@ -79,8 +83,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void OnNextClick(View view){
         int current = pager.getCurrentItem();
-        int next = current + 1;
-        pager.setCurrentItem(next, true);
+        if (current == (covers.length - 1)){
+            if(CONTINOUS_PLAY){
+                CONTINOUS_PLAY = false;
+                mPlayButton.setImageResource(R.drawable.ic_play);
+                pager.setCurrentItem(0, true);
+                continousPlayButton.setChecked(false);
+            }
+
+        }else{
+            int next = current + 1;
+            pager.setCurrentItem(next, true);
+        }
     }
 
     public void OnPreviousClick(View view){
@@ -162,8 +176,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
-        button = (ToggleButton) findViewById(R.id.star);
-        button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        starButton = (ToggleButton) findViewById(R.id.star);
+        starButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     stars[index] = true;
@@ -172,6 +186,26 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        mShuffleButton = (ImageView) findViewById(R.id.shuffle);
+        mShuffleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Shuffle();
+            }
+        });
+
+        continousPlayButton = (ToggleButton) findViewById(R.id.continous_play);
+        continousPlayButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    CONTINOUS_PLAY = true;
+                } else {
+                    CONTINOUS_PLAY = false;
+                }
+            }
+        });
+
         View view = findViewById(R.id.activity_main);
         View root = view.getRootView();
         root.setBackgroundColor(getResources().getColor(R.color.colorGray));
@@ -273,7 +307,11 @@ public class MainActivity extends AppCompatActivity {
         public void onPlaybackCompleted() {
             mPlayerAdapter.reset();
             tv_current_time.setText("00:00");
-            mPlayButton.setImageResource(R.drawable.ic_play);
+            if (CONTINOUS_PLAY){
+                OnNextClick(null);
+            }else{
+                mPlayButton.setImageResource(R.drawable.ic_play);
+            }
         }
     }
 
@@ -315,11 +353,14 @@ public class MainActivity extends AppCompatActivity {
                 tv_song.setText(song_title[position]);
                 tv_artist.setText(singers[position]);
                 index = position;
-                button.setChecked(stars[index]);
+                starButton.setChecked(stars[index]);
 
                 mPlayerAdapter.release();
                 mPlayerAdapter.loadMedia(MEDIAS_RES_ID[position]);
-                mPlayButton.setImageResource(R.drawable.ic_play);
+                if(!CONTINOUS_PLAY)
+                    mPlayButton.setImageResource(R.drawable.ic_play);
+                else
+                    mPlayerAdapter.play();
 
                 try{
                     updateTimer.interrupt();
