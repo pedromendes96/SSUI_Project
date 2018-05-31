@@ -2,6 +2,7 @@ package com.uiresource.musicplayer;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
@@ -30,7 +31,9 @@ import android.widget.ToggleButton;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -46,15 +49,16 @@ import me.crosswall.lib.coverflow.core.PagerContainer;
 public class MainActivity extends AppCompatActivity {
 
     // UI
-    public static int[] covers = {R.drawable.black_eye_peas, R.drawable.calum, R.drawable.charlie_puth, R.drawable.ed_sheeran, R.drawable.rihanna, R.drawable.shawn };
-    public static String[] song_title = {"The Time", "You Are The Reason", "Done For Me","Perfect", "Wild Thoughts", "In My Blood" };
-    public static String[] singers = {"Black Eye Peas", "Calum Scott", "Charlie Puth","Ed Sheeran", "Rihanna", "Shawn Mendes" };
-    public static boolean[] stars = {false,false,false,false,false,false};
+    public int[] covers = {R.drawable.black_eye_peas, R.drawable.calum, R.drawable.charlie_puth, R.drawable.ed_sheeran, R.drawable.rihanna, R.drawable.shawn };
+    public String[] song_title = {"The Time", "You Are The Reason", "Done For Me","Perfect", "Wild Thoughts", "In My Blood" };
+    public String[] singers = {"Black Eye Peas", "Calum Scott", "Charlie Puth","Ed Sheeran", "Rihanna", "Shawn Mendes" };
+    public boolean[] stars = {false,false,false,false,false,false};
     // END UI
+    public static int[] MEDIAS_RES_ID =  {R.raw.the_time,R.raw.you_are_the_reason,R.raw.done_for_me,R.raw.perfect,R.raw.wild_thoughts,R.raw.in_my_blood};
 
     public static final String TAG = "MainActivity";
 
-    public static final int[] MEDIAS_RES_ID =  {R.raw.the_time,R.raw.you_are_the_reason,R.raw.done_for_me,R.raw.perfect,R.raw.wild_thoughts,R.raw.in_my_blood};
+
     public static boolean CONTINOUS_PLAY = false;
 
     public int index;
@@ -71,6 +75,41 @@ public class MainActivity extends AppCompatActivity {
     private ImageView mShuffleButton;
     private UpdateTimer updateTimer;
     private ViewPager pager;
+    private View root;
+
+    private void UpdateCoverFlow(){
+        PagerContainer container = (PagerContainer) findViewById(R.id.pager_container);
+        pager = container.getViewPager();
+        pager.setAdapter(new MainActivity.MyPagerAdapter());
+        pager.setClipChildren(false);
+        pager.setOffscreenPageLimit(15);
+
+        boolean showTransformer = getIntent().getBooleanExtra("showTransformer",true);
+
+        if(showTransformer){
+            new CoverFlow.Builder()
+                    .with(pager)
+                    .scale(0.3f)
+                    .pagerMargin(getResources().getDimensionPixelSize(R.dimen.pager_margin))
+                    .spaceSize(0f)
+                    .build();
+
+        }else{
+            pager.setPageMargin(30);
+        }
+        OnNextClick(null);
+        OnPreviousClick(null);
+        if (CONTINOUS_PLAY){
+            mPlayButton.setImageResource(R.drawable.ic_play);
+            if(updateTimer == null){
+                updateTimer = new UpdateTimer();
+                updateTimer.start();
+            }else if (!updateTimer.isAlive()){
+                updateTimer = new UpdateTimer();
+                updateTimer.start();
+            }
+        }
+    }
 
     private void SetCorrectFormatTime(TextView textView, int duration){
         String time_in_format = String.format("%02d:%02d",
@@ -79,6 +118,44 @@ public class MainActivity extends AppCompatActivity {
                         TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration))
         );
         textView.setText(time_in_format);
+    }
+
+    private void Shuffle(){
+        ArrayList<ArrayList<Object>> arrayLists = new ArrayList<ArrayList<Object>>();
+        for (int i = 0; i < covers.length; i++){
+            ArrayList<Object> objectArrayList = new ArrayList<Object>();
+            objectArrayList.add(covers[i]);
+            objectArrayList.add(song_title[i]);
+            objectArrayList.add(singers[i]);
+            objectArrayList.add(stars[i]);
+            objectArrayList.add(MEDIAS_RES_ID[i]);
+            arrayLists.add(objectArrayList);
+        }
+        Collections.shuffle(arrayLists);
+        int[] new_covers = new int[covers.length];
+        String[] new_song_title = new String[song_title.length];
+        String[] new_singers = new String[singers.length];
+        boolean[] new_stars = new boolean[stars.length];
+        int[] new_medias = new int[MEDIAS_RES_ID.length];
+        for (int i = 0; i < covers.length; i++){
+            ArrayList<Object> objectArrayList = arrayLists.get(i);
+            new_covers[i] = (int)objectArrayList.get(0);
+            new_song_title[i] = (String) objectArrayList.get(1);
+            new_singers[i] = (String) objectArrayList.get(2);
+            new_stars[i] = (Boolean) objectArrayList.get(3);
+            new_medias[i] = (int) objectArrayList.get(4);
+        }
+        Log.i(TAG,"Just to see how shuffle gone!");
+        if(mPlayerAdapter.isPlaying()){
+            mPlayerAdapter.reset();
+            mPlayButton.setImageResource(R.drawable.ic_play);
+        }
+        covers = new_covers;
+        song_title = new_song_title;
+        singers = new_singers;
+        stars = new_stars;
+        MEDIAS_RES_ID = new_medias;
+        UpdateCoverFlow();
     }
 
     public void OnNextClick(View view){
@@ -176,6 +253,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
+        View view = findViewById(R.id.activity_main);
+        root = view.getRootView();
+        Palette palette = Palette.from(drawableToBitmap(covers[0])).generate();
+        setStatusBarAndBackground(palette);
         starButton = (ToggleButton) findViewById(R.id.star);
         starButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -205,10 +286,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        View view = findViewById(R.id.activity_main);
-        View root = view.getRootView();
-        root.setBackgroundColor(getResources().getColor(R.color.colorGray));
 
         mSeekbarAudio = (SeekBar) findViewById(R.id.seekbar_audio);
         mPlayButton = (ImageView) findViewById(R.id.play_pause);
@@ -328,7 +405,6 @@ public class MainActivity extends AppCompatActivity {
 
         boolean showTransformer = getIntent().getBooleanExtra("showTransformer",true);
 
-
         if(showTransformer){
 
             new CoverFlow.Builder()
@@ -372,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
                 RelativeLayout relativeLayout = (RelativeLayout) pager.getAdapter().instantiateItem(pager, 0);
                 ViewCompat.setElevation(relativeLayout.getRootView(), 8.0f);
                 Palette palette = Palette.from(drawableToBitmap(covers[position])).generate();
-                setStatusBar(palette);
+                setStatusBarAndBackground(palette);
                 tv_current_time.setText("00:00");
             }
 
@@ -387,7 +463,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-
             View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.item_cover,null);
             SquareImageView imageView = (SquareImageView) view.findViewById(R.id.image_cover);
             imageView.setImageDrawable(getResources().getDrawable(covers[position]));
@@ -412,7 +487,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setStatusBar(Palette palette){
+    public void setStatusBarAndBackground(Palette palette){
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -420,6 +495,7 @@ public class MainActivity extends AppCompatActivity {
             Palette.Swatch vibrant = palette.getDominantSwatch();
             if (vibrant != null) {
                 window.setStatusBarColor(vibrant.getRgb());
+                root.setBackgroundColor(vibrant.getRgb());
             }
 
         }
