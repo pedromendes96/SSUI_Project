@@ -14,6 +14,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,11 +41,6 @@ import java.util.concurrent.TimeUnit;
 import me.crosswall.lib.coverflow.CoverFlow;
 import me.crosswall.lib.coverflow.core.PagerContainer;
 
-/**
- * Allows playback of a single MP3 file via the UI. It contains a {@link MediaPlayerHolder}
- * which implements the {@link PlayerAdapter} interface that the activity uses to control
- * audio playback.
- */
 
 public class MainActivity extends AppCompatActivity {
 
@@ -57,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     public static int[] MEDIAS_RES_ID =  {R.raw.the_time,R.raw.you_are_the_reason,R.raw.done_for_me,R.raw.perfect,R.raw.wild_thoughts,R.raw.in_my_blood};
 
     public static final String TAG = "MainActivity";
+    private boolean VALID_FIRST_CLICK = false;
 
 
     public static boolean CONTINOUS_PLAY = false;
@@ -100,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         OnNextClick(null);
         OnPreviousClick(null);
         if (CONTINOUS_PLAY){
-            mPlayButton.setImageResource(R.drawable.ic_play);
+            mPlayButton.setImageResource(R.drawable.ic_pause);
             if(updateTimer == null){
                 updateTimer = new UpdateTimer();
                 updateTimer.start();
@@ -142,12 +139,13 @@ public class MainActivity extends AppCompatActivity {
             new_covers[i] = (int)objectArrayList.get(0);
             new_song_title[i] = (String) objectArrayList.get(1);
             new_singers[i] = (String) objectArrayList.get(2);
-            new_stars[i] = (Boolean) objectArrayList.get(3);
+            new_stars[i] = (boolean) objectArrayList.get(3);
             new_medias[i] = (int) objectArrayList.get(4);
         }
         Log.i(TAG,"Just to see how shuffle gone!");
         if(mPlayerAdapter.isPlaying()){
             mPlayerAdapter.reset();
+            mPlayerAdapter.release();
             mPlayButton.setImageResource(R.drawable.ic_play);
         }
         covers = new_covers;
@@ -302,24 +300,27 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        if(mPlayerAdapter.isPlaying()){
-                            mPlayerAdapter.pause();
-                            try{
-                                updateTimer.interrupt();
-                            }
-                            catch (Exception e){
-                                e.getStackTrace();
-                            }
-                            mPlayButton.setImageResource(R.drawable.ic_play);
-                        }else{
-                            mPlayerAdapter.play();
-                            updateTimer = new UpdateTimer();
-                            updateTimer.start();
-                            mPlayButton.setImageResource(R.drawable.ic_pause);
-                        }
-
+                        OnStartAndPauseClick();
                     }
                 });
+    }
+
+    private void OnStartAndPauseClick(){
+        if(mPlayerAdapter.isPlaying()){
+            mPlayerAdapter.pause();
+            try{
+                updateTimer.interrupt();
+            }
+            catch (Exception e){
+                e.getStackTrace();
+            }
+            mPlayButton.setImageResource(R.drawable.ic_play);
+        }else{
+            mPlayerAdapter.play();
+            updateTimer = new UpdateTimer();
+            updateTimer.start();
+            mPlayButton.setImageResource(R.drawable.ic_pause);
+        }
     }
 
     private void initializePlaybackController() {
@@ -435,8 +436,10 @@ public class MainActivity extends AppCompatActivity {
                 mPlayerAdapter.loadMedia(MEDIAS_RES_ID[position]);
                 if(!CONTINOUS_PLAY)
                     mPlayButton.setImageResource(R.drawable.ic_play);
-                else
+                else{
                     mPlayerAdapter.play();
+                    mPlayButton.setImageResource(R.drawable.ic_pause);
+                }
 
                 try{
                     updateTimer.interrupt();
@@ -461,10 +464,37 @@ public class MainActivity extends AppCompatActivity {
 
     private class MyPagerAdapter extends PagerAdapter {
 
+        private class OnFirstClick extends Thread {
+
+            public void run() {
+                try {
+                    sleep(700);
+                } catch (Exception e) {
+                    Log.e(TAG, "catch clause in thread");
+                }
+                VALID_FIRST_CLICK = false;
+            }
+        }
+
+
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
             View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.item_cover,null);
             SquareImageView imageView = (SquareImageView) view.findViewById(R.id.image_cover);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(VALID_FIRST_CLICK){
+                        Log.i(TAG,"Second Click valid");
+                        OnStartAndPauseClick();
+                    }else{
+                        OnFirstClick onDoubleClick = new OnFirstClick();
+                        VALID_FIRST_CLICK = true;
+                        onDoubleClick.start();
+                        Log.i(TAG,"FIRST CLICK");
+                    }
+                }
+            });
             imageView.setImageDrawable(getResources().getDrawable(covers[position]));
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             container.addView(view);
@@ -497,7 +527,6 @@ public class MainActivity extends AppCompatActivity {
                 window.setStatusBarColor(vibrant.getRgb());
                 root.setBackgroundColor(vibrant.getRgb());
             }
-
         }
     }
 
